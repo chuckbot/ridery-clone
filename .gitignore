@@ -1,0 +1,10 @@
+cat <<EOF > .gitignore
+node_modules
+dist
+.env
+.DS_Store
+*.log
+apps/server/dist
+apps/client/.output
+apps/client/.nuxt
+EOF
