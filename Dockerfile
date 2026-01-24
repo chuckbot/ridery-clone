@@ -8,6 +8,7 @@ COPY . .
 
 # Stage 2: Build
 FROM base AS build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm install --frozen-lockfile
 RUN pnpm run --filter @ridery/shared build
 RUN pnpm run --filter server build
