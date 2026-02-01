@@ -35,7 +35,7 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="primary" size="large" block :loading="isLoading" @click="submitTrip">
+            <v-btn color="primary" size="large" block :loading="isLoading" @click="handleRequestTrip">
               Solicitar Viaje
             </v-btn>
           </v-card-actions>
@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { TripSchema } from '@ridery/shared' // Tu contrato de datos
+import { TripSchema } from '@ridery/shared'
 const { createTrip } = useApi()
 
 const isFormValid = ref(false)
@@ -59,20 +59,22 @@ const showSnackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref('success')
 
-// Data inicial con puntos reales de Coro
 const tripData = ref({
-  origin: { lat: 11.4111, lng: -69.6732 }, // Plaza Falcón
-  destination: { lat: 11.4125, lng: -69.6775 }, // Paseo Talavera
-  status: 'PENDING'
+  origin: { lat: 11.4111, lng: -69.6732 },
+  destination: { lat: 11.4125, lng: -69.6775 },
+  status: 'PENDING',
+  timestamp: new Date() // Zod suele preferir strings para fechas en JSON
 })
 
-const submitTrip = async () => {
+const handleRequestTrip = async () => {
   isLoading.value = true
+  tripData.value.timestamp = new Date()
 
-  // 1. Validar con Zod antes de enviar
+  // 1. Validar con Zod antes de intentar enviar
   const validation = TripSchema.safeParse(tripData.value)
 
   if (!validation.success) {
+    console.log('❌ Error de Zod:', validation.error.format())
     snackbarText.value = "Datos de ubicación inválidos"
     snackbarColor.value = "error"
     showSnackbar.value = true
@@ -80,34 +82,19 @@ const submitTrip = async () => {
     return
   }
 
+  // 2. Si la validación pasa, enviamos al backend de Fastify
   try {
-    // 2. Enviar al backend de Fastify que ya tienes en Docker
-    const response = await $fetch('http://localhost:3000/api/trips', {
-      method: 'POST',
-      body: validation.data
-    })
+    const result = await createTrip(validation.data) // Usamos validation.data porque ya está tipado
 
-    snackbarText.value = "¡Viaje solicitado! Buscando conductores..."
+    snackbarText.value = `¡Viaje ${result.tripId || 'registrado'} solicitado con éxito!`
     snackbarColor.value = "success"
     showSnackbar.value = true
-  } catch (error) {
-    snackbarText.value = "Error al conectar con el servidor"
+    console.log(`✅ Viaje ${result.tripId || 'registrado'} en camino por Coro!`)
+  } catch (e) {
+    console.error('❌ Error de red:', e)
+    snackbarText.value = "Error al conectar con el servidor de Ridery"
     snackbarColor.value = "error"
     showSnackbar.value = true
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleRequestTrip = async () => {
-  try {
-    isLoading.value = true
-    const result = await createTrip(tripData.value)
-
-    // Si el backend disparó el evento TRIP_CREATED, aquí ya tenemos el ID
-    console.log(`¡Viaje ${result.tripId} en camino por Coro!`)
-  } catch (e) {
-    // Manejo de errores senior
   } finally {
     isLoading.value = false
   }
