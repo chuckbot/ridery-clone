@@ -26,5 +26,5 @@ COPY --from=build /app/packages/shared ./packages/shared
 
 # Instalamos solo dependencias de producción
 RUN pnpm install --prod --frozen-lockfile
-EXPOSE 3000
+EXPOSE 3001
 CMD ["node", "apps/server/dist/server.js"]

@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "pnpm -r --parallel dev",
     "seed:drivers": "tsx scripts/seedDrivers.ts"
   },
   "keywords": [],
@@ -12,6 +13,7 @@
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
     "@types/mongodb": "^4.0.7",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {

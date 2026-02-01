@@ -1,20 +1,29 @@
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { FastifyPluginAsync } from 'fastify';
-import { TripSchema } from '@ridery/shared';
+import autoload from '@fastify/autoload';
+import cors from '@fastify/cors'; // <--- Agrega este import [cite: 2026-01-24]
 
-const tripRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.post('/', async (request, reply) => {
-    // Validamos el body con el esquema compartido
-    const tripData = TripSchema.parse(request.body);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = join(__filename, '..');
 
-    // Guardamos en DB
-    const { db } = fastify.mongo;
-    const result = await db?.collection('trips').insertOne(tripData);
+export const app: FastifyPluginAsync = async (fastify, opts) => {
+  // 0. Registro de CORS (Debe ir antes de las rutas) [cite: 2026-01-24]
+  await fastify.register(cors, {
+    origin: ["http://localhost:3000"] // Tu URL de Nuxt 4 [cite: 2026-01-24]
+  });
 
-    // Emitimos el evento de "Viaje Creado"
-    fastify.events.emit('TRIP_CREATED', { tripId: result?.insertedId, ...tripData });
+  // 1. Cargamos Los Plugins (DB, Auth, EventEmitters, etc.)
+  fastify.register(autoload, {
+    dir: join(__dirname, 'plugins'),
+    options: Object.assign({}, opts),
+  });
 
-    return { success: true, id: result?.insertedId };
+  // 2. Cargamos las Rutas
+  fastify.register(autoload, {
+    dir: join(__dirname, 'routes'),
+    options: Object.assign({ prefix: '/api' }, opts),
   });
 };
 
-export default tripRoutes;
+export default app;
