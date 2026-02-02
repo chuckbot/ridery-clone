@@ -1,11 +1,26 @@
-import { FastifyInstance } from 'fastify';
+// apps/server/src/plugins/mongodb.ts
+import mongoose from 'mongoose';
 import fp from 'fastify-plugin';
-import mongodb from '@fastify/mongodb';
 
-export default fp(async (fastify: FastifyInstance) => {
-  fastify.register(mongodb, {
-    // En producción usarías variables de entorno
-    forceClose: true,
-    url: process.env.MONGO_URI || 'mongodb://localhost:27017/ridery'
-  });
+export default fp(async (fastify) => {
+  try {
+    const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/ridery';
+    
+    // Conectamos Mongoose
+    await mongoose.connect(uri);
+
+    // Decoramos fastify con mongoose por si lo necesitas fuera de los modelos
+    fastify.decorate('mongoose', mongoose);
+    
+    fastify.log.info('🍃 Conexión a MongoDB vía Mongoose establecida en Coro');
+  } catch (error) {
+    fastify.log.error({ err: error }, '❌ Error conectando a MongoDB');
+    process.exit(1);
+  }
 });
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    mongoose: typeof import('mongoose');
+  }
+}

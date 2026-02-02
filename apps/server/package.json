@@ -20,9 +20,11 @@
     "@ridery/shared": "workspace:*",
     "fastify": "^5.7.1",
     "fastify-plugin": "^5.1.0",
+    "mongoose": "^9.1.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/mongoose": "^5.11.97",
     "@types/node": "^25.0.10",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

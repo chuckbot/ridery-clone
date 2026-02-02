@@ -1,34 +1,34 @@
+// apps/server/src/services/dispatchService.ts
 import { FastifyInstance } from 'fastify';
 import { Trip } from '@ridery/shared';
+import { Driver } from '../models/driver.model.js'; // Importamos el modelo nuevo
 
 export const initDispatchService = (fastify: FastifyInstance) => {
   fastify.events.on('TRIP_CREATED', async (trip: Trip & { tripId: string }) => {
-    const { db } = fastify.mongo;
     fastify.log.info(`[Dispatcher] Buscando conductores para viaje ${trip.tripId} en Coro...`);
 
     try {
-      // 1. Buscamos conductores disponibles en un radio de 5km
-      const nearbyDrivers = await db?.collection('drivers').find({
+      // Usamos el modelo con una sintaxis mucho más limpia
+      const nearbyDriver = await Driver.findOne({
         status: 'AVAILABLE',
         location: {
           $near: {
             $geometry: { 
               type: "Point", 
-              coordinates: [trip.origin.lng, trip.origin.lat] // [longitud, latitud]
+              coordinates: [trip.origin.lng, trip.origin.lat] 
             },
-            $maxDistance: 5000 // Metros
+            $maxDistance: 5000 // 5km
           }
         }
-      }).limit(5).toArray();
+      });
 
-      if (nearbyDrivers && nearbyDrivers.length > 0) {
-        const selectedDriver = nearbyDrivers[0];
-        fastify.log.info(`[Dispatcher] ¡Éxito! Conductor ${selectedDriver._id} asignado.`);
+      if (nearbyDriver) {
+        fastify.log.info(`[Dispatcher] ¡Éxito! Conductor ${nearbyDriver.name} asignado.`);
         
-        // 2. Emitimos el siguiente evento en la cadena
-        fastify.events.emit('DRIVER_ASSIGNED', { 
-          tripId: trip.tripId, 
-          driverId: selectedDriver._id 
+        // Notificamos la asignación
+        fastify.events.emit('DRIVER_ASSIGNED', {
+          tripId: trip.tripId,
+          driverId: nearbyDriver._id
         });
       } else {
         fastify.log.warn(`[Dispatcher] No hay conductores cerca para el viaje ${trip.tripId}`);
